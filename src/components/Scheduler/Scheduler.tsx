@@ -50,7 +50,6 @@ import {
   fmtTime,
   fmtWeek,
   fromDragId,
-  fromInputDate,
   hoursInRange,
   issueKeyForEntry,
   MAX_DAY_MINUTES,
@@ -63,7 +62,6 @@ import {
   sameDay,
   startOfDay,
   startOfWeek,
-  toInputDate,
 } from './utils';
 import './Scheduler.css';
 
@@ -74,6 +72,23 @@ const VIEW_LABELS: Record<SchedulerView, string> = {
   week: 'Week',
   workWeek: 'Work week',
   month: 'Month',
+};
+
+type DatePickerKind = 'start' | 'end';
+
+const DATE_PICKER_WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+const DATE_PICKER_MONTH = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' });
+const DATE_PICKER_VALUE = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+const buildDatePickerCells = (monthDate: Date): Array<{ day: Date; inMonth: boolean }> => {
+  const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+  const nextMonthStart = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1);
+  const gridStart = startOfWeek(monthStart);
+  return Array.from({ length: 42 }, (_, index) => {
+    const day = new Date(gridStart);
+    day.setDate(day.getDate() + index);
+    return { day, inMonth: day >= monthStart && day < nextMonthStart };
+  });
 };
 
 const normalizeTaskItem = (
@@ -284,6 +299,12 @@ const SchedulerBase = ({
   const [theme, setTheme] = useState<ThemeMode>(initialTheme);
   const [currentView, setCurrentView] = useState<SchedulerView>(resolvedInitialView);
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
+  const [rangeEndDate, setRangeEndDate] = useState<Date | null>(null);
+  const [openDatePicker, setOpenDatePicker] = useState<DatePickerKind | null>(null);
+  const [pickerMonth, setPickerMonth] = useState<Record<DatePickerKind, Date>>({
+    start: startOfDay(initialDate),
+    end: startOfDay(initialDate),
+  });
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [taskTypeFilter, setTaskTypeFilter] = useState<string>('all');
   const [searchText, setSearchText] = useState<string>('');
@@ -309,6 +330,7 @@ const SchedulerBase = ({
   const createDraftRef = useRef<CreateDraft | null>(null);
   const createListenersRef = useRef<MouseListeners>({ move: null, up: null });
   const schedulerWrapRef = useRef<HTMLDivElement | null>(null);
+  const dateRangeRef = useRef<HTMLDivElement | null>(null);
   const gridDayRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const monthDayRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const sensors = useSensors(
@@ -390,6 +412,28 @@ const SchedulerBase = ({
   }, [createDraft]);
 
   useEffect(() => {
+    if (!openDatePicker || typeof window === 'undefined') return;
+    const onPointerDown = (event: MouseEvent) => {
+      const root = dateRangeRef.current;
+      if (!root) {
+        setOpenDatePicker(null);
+        return;
+      }
+      if (event.target instanceof Node && root.contains(event.target)) return;
+      setOpenDatePicker(null);
+    };
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpenDatePicker(null);
+    };
+    window.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('keydown', onEscape);
+    return () => {
+      window.removeEventListener('mousedown', onPointerDown);
+      window.removeEventListener('keydown', onEscape);
+    };
+  }, [openDatePicker]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const edge = 18;
     const onMove = (event: MouseEvent) => {
@@ -445,15 +489,25 @@ const SchedulerBase = ({
     };
   }, [WORK_START_MINUTES, START_MINUTES, SLOT_MINUTES, currentView, selectedDate]);
 
+  const activeRange = useMemo(() => {
+    if (!rangeEndDate) return null;
+    const start = startOfDay(selectedDate);
+    const end = endOfDay(rangeEndDate);
+    if (start.getTime() <= end.getTime()) return { from: start, to: end };
+    return { from: startOfDay(rangeEndDate), to: endOfDay(selectedDate) };
+  }, [rangeEndDate, selectedDate]);
+
   const filtered = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     return appointments.filter((a) => {
+      const when = new Date(a.startDate);
       const projectOk = projectFilter === 'all' || a.projectId === Number(projectFilter);
       const typeOk = taskTypeFilter === 'all' || a.taskType === taskTypeFilter;
       const searchOk = !q || a.text.toLowerCase().includes(q) || (a.description || '').toLowerCase().includes(q);
-      return projectOk && typeOk && searchOk;
+      const rangeOk = !activeRange || (when >= activeRange.from && when <= activeRange.to);
+      return projectOk && typeOk && searchOk && rangeOk;
     });
-  }, [appointments, projectFilter, taskTypeFilter, searchText]);
+  }, [appointments, projectFilter, taskTypeFilter, searchText, activeRange]);
 
   const weekStart = useMemo(() => startOfWeek(selectedDate), [selectedDate]);
   const weekEnd = useMemo(() => endOfWeek(selectedDate), [selectedDate]);
@@ -486,7 +540,10 @@ const SchedulerBase = ({
   const month = useMemo(() => buildMonthCells(selectedDate), [selectedDate]);
 
   const activeFilters =
-    (projectFilter !== 'all' ? 1 : 0) + (taskTypeFilter !== 'all' ? 1 : 0) + (searchText.trim() ? 1 : 0);
+    (projectFilter !== 'all' ? 1 : 0) +
+    (taskTypeFilter !== 'all' ? 1 : 0) +
+    (searchText.trim() ? 1 : 0) +
+    (rangeEndDate ? 1 : 0);
   const utilization = Math.max(0, Math.round((weekHours / 40) * 100));
   const slotIndexes = useMemo(() => Array.from({ length: SLOT_COUNT }, (_, index) => index), [SLOT_COUNT]);
   const timeLabelSlots = useMemo(() => {
@@ -997,6 +1054,7 @@ const SchedulerBase = ({
     setProjectFilter('all');
     setTaskTypeFilter('all');
     setSearchText('');
+    setRangeEndDate(null);
   };
 
   const shiftDate = (direction: number): void => {
@@ -1013,6 +1071,107 @@ const SchedulerBase = ({
     const typedView = nextView as SchedulerView;
     if (!resolvedViews.includes(typedView)) return;
     applyViewChange(typedView);
+  };
+  const openPicker = (kind: DatePickerKind): void => {
+    const anchor = kind === 'start' ? selectedDate : rangeEndDate || selectedDate;
+    setPickerMonth((prev) => ({ ...prev, [kind]: startOfDay(anchor) }));
+    setOpenDatePicker((prev) => (prev === kind ? null : kind));
+  };
+  const shiftPickerMonth = (kind: DatePickerKind, delta: number): void => {
+    setPickerMonth((prev) => {
+      const next = new Date(prev[kind]);
+      next.setMonth(next.getMonth() + delta);
+      return { ...prev, [kind]: startOfDay(next) };
+    });
+  };
+  const onStartDateChange = (next: Date): void => {
+    const value = startOfDay(next);
+    updateSelectedDate(value);
+    setPickerMonth((prev) => ({ ...prev, start: value }));
+    setRangeEndDate((prev) => (prev && prev.getTime() < value.getTime() ? value : prev));
+  };
+  const onRangeEndDateChange = (next: Date | null): void => {
+    if (!next) {
+      setRangeEndDate(null);
+      return;
+    }
+    const value = startOfDay(next);
+    setRangeEndDate(value);
+    setPickerMonth((prev) => ({ ...prev, end: value }));
+  };
+  const selectDateFromPicker = (kind: DatePickerKind, day: Date): void => {
+    if (kind === 'start') {
+      onStartDateChange(day);
+    } else {
+      onRangeEndDateChange(day);
+    }
+    setOpenDatePicker(null);
+  };
+  const clearRangeEnd = (): void => {
+    onRangeEndDateChange(null);
+    setOpenDatePicker(null);
+  };
+  const dateValueLabel = (value: Date | null): string => {
+    if (!value) return 'Select date';
+    return DATE_PICKER_VALUE.format(value);
+  };
+  const renderDatePicker = (kind: DatePickerKind) => {
+    if (openDatePicker !== kind) return null;
+    const cells = buildDatePickerCells(pickerMonth[kind]);
+    const selected = kind === 'start' ? selectedDate : rangeEndDate;
+    return (
+      <div className="date-popper" role="dialog" aria-label={`${kind === 'start' ? 'Start' : 'End'} date picker`}>
+        <div className="date-popper-head">
+          <button
+            type="button"
+            className="date-popper-nav"
+            onClick={() => shiftPickerMonth(kind, -1)}
+            aria-label="Previous month"
+          >
+            ‹
+          </button>
+          <div className="date-popper-title">{DATE_PICKER_MONTH.format(pickerMonth[kind])}</div>
+          <button
+            type="button"
+            className="date-popper-nav"
+            onClick={() => shiftPickerMonth(kind, 1)}
+            aria-label="Next month"
+          >
+            ›
+          </button>
+        </div>
+        <div className="date-popper-weekdays">
+          {DATE_PICKER_WEEKDAYS.map((label) => (
+            <span key={`${kind}-${label}`}>{label}</span>
+          ))}
+        </div>
+        <div className="date-popper-grid">
+          {cells.map((cell) => {
+            const isToday = sameDay(cell.day, today);
+            const isSelected = selected ? sameDay(cell.day, selected) : false;
+            const inRange = Boolean(activeRange && cell.day >= activeRange.from && cell.day <= activeRange.to);
+            const isRangeEdge = Boolean(
+              activeRange && (sameDay(cell.day, activeRange.from) || sameDay(cell.day, activeRange.to)),
+            );
+            return (
+              <button
+                key={`${kind}-${cell.day.toISOString()}`}
+                type="button"
+                className={`date-cell${cell.inMonth ? '' : ' muted'}${isToday ? ' today' : ''}${isSelected ? ' selected' : ''}${inRange ? ' in-range' : ''}${isRangeEdge ? ' range-edge' : ''}`}
+                onClick={() => selectDateFromPicker(kind, cell.day)}
+              >
+                {cell.day.getDate()}
+              </button>
+            );
+          })}
+        </div>
+        {kind === 'end' && (
+          <button type="button" className="date-popper-clear" onClick={clearRangeEnd}>
+            Clear end date
+          </button>
+        )}
+      </div>
+    );
   };
   const draggingInlineContent = draggingDurationMinutes <= SLOT_MINUTES;
   const draggingShowIssueKey = draggingDurationMinutes >= 30;
@@ -1085,7 +1244,7 @@ const SchedulerBase = ({
         )}
 
         {showFilters && (
-          <section className="card">
+          <section className="card filters-card">
             <div className="card-h">Filters and controls</div>
             <div className="toolbar">
               <select className="select" value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)}>
@@ -1105,7 +1264,7 @@ const SchedulerBase = ({
                 ))}
               </select>
               <input
-                className="input"
+                className="input search-input"
                 type="search"
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
@@ -1118,12 +1277,29 @@ const SchedulerBase = ({
                   </option>
                 ))}
               </select>
-              <input
-                className="input"
-                type="date"
-                value={toInputDate(selectedDate)}
-                onChange={(e) => updateSelectedDate(fromInputDate(e.target.value))}
-              />
+              <div className="date-range" ref={dateRangeRef}>
+                <div className={`date-field date-field-start${openDatePicker === 'start' ? ' open' : ''}`}>
+                  <span className="date-field-label">From</span>
+                  <button type="button" className="date-trigger" onClick={() => openPicker('start')}>
+                    <span className="date-trigger-value">{dateValueLabel(selectedDate)}</span>
+                    <span className="date-trigger-icon" aria-hidden="true">
+                      ▾
+                    </span>
+                  </button>
+                  {renderDatePicker('start')}
+                </div>
+                <span className="date-range-sep">to</span>
+                <div className={`date-field date-field-end${openDatePicker === 'end' ? ' open' : ''}`}>
+                  <span className="date-field-label">To</span>
+                  <button type="button" className="date-trigger" onClick={() => openPicker('end')}>
+                    <span className="date-trigger-value">{dateValueLabel(rangeEndDate)}</span>
+                    <span className="date-trigger-icon" aria-hidden="true">
+                      ▾
+                    </span>
+                  </button>
+                  {renderDatePicker('end')}
+                </div>
+              </div>
               <button type="button" className="btn" onClick={() => shiftDate(-1)}>
                 Prev
               </button>
@@ -1142,7 +1318,7 @@ const SchedulerBase = ({
             <div className="meta">
               {activeFilters ? `${activeFilters} active filters` : 'No filters'} | Drag cards to reschedule, drag
               top/bottom edge to resize, click a slot for {DEFAULT_TASK_MINUTES}m or drag slots to create custom
-              duration
+              duration{activeRange ? ` | Range ${fmtDate(activeRange.from)} - ${fmtDate(activeRange.to)}` : ''}
             </div>
           </section>
         )}

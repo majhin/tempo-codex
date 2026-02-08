@@ -43,6 +43,23 @@ body,
   --text-emphasis: #001d45;
   --primary: #0052cc;
   --primary-strong: #0c66e4;
+  --date-field-bg: linear-gradient(180deg, #ffffff 0%, #f4f8ff 100%);
+  --date-field-border: #b6c7de;
+  --date-field-shadow: 0 1px 0 rgba(9, 30, 66, 0.05);
+  --date-field-shadow-focus: 0 6px 14px rgba(12, 102, 228, 0.14);
+  --date-input-focus: rgba(12, 102, 228, 0.22);
+  --date-icon-bg: rgba(12, 102, 228, 0.12);
+  --date-icon-bg-hover: rgba(12, 102, 228, 0.2);
+  --date-icon-filter: none;
+  --date-popper-bg: #ffffff;
+  --date-popper-border: #c4d3e6;
+  --date-popper-shadow: 0 16px 30px rgba(9, 30, 66, 0.2);
+  --date-popper-head-bg: #f4f8ff;
+  --date-popper-muted: #8b9ab0;
+  --date-popper-hover: #e9f1ff;
+  --date-popper-in-range: #dbe9ff;
+  --date-popper-selected-bg: #0c66e4;
+  --date-popper-selected-fg: #ffffff;
   --resize-cursor:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l-4.5 4.5h3.2v8.2h2.6V6.5h3.2zM16 30l4.5-4.5h-3.2v-8.2h-2.6v8.2h-3.2z' fill='%230c66e4'/%3E%3Crect x='9.5' y='14.8' width='13' height='2' rx='1' fill='%230c66e4'/%3E%3Crect x='9.5' y='17.9' width='13' height='2' rx='1' fill='%230c66e4'/%3E%3C/svg%3E")
     16 16,
@@ -92,6 +109,24 @@ body,
   --text-emphasis: #ffffff;
   --primary: #4c9aff;
   --primary-strong: #6cb4ff;
+  --date-field-bg: linear-gradient(180deg, #2a3646 0%, #243242 100%);
+  --date-field-border: #6a83a4;
+  --date-field-shadow: 0 1px 0 rgba(0, 0, 0, 0.32);
+  --date-field-shadow-focus: 0 6px 14px rgba(108, 180, 255, 0.22);
+  --date-input-focus: rgba(108, 180, 255, 0.28);
+  --date-icon-bg: rgba(108, 180, 255, 0.14);
+  --date-icon-bg-hover: rgba(108, 180, 255, 0.24);
+  --date-icon-filter: brightness(0) saturate(100%) invert(78%) sepia(14%) saturate(890%) hue-rotate(182deg)
+    brightness(100%) contrast(94%);
+  --date-popper-bg: #243244;
+  --date-popper-border: #4f6280;
+  --date-popper-shadow: 0 18px 32px rgba(0, 0, 0, 0.5);
+  --date-popper-head-bg: #2c3d53;
+  --date-popper-muted: #7f93b0;
+  --date-popper-hover: #334a69;
+  --date-popper-in-range: #2d4362;
+  --date-popper-selected-bg: #6cb4ff;
+  --date-popper-selected-fg: #102235;
   --resize-cursor:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l-4.5 4.5h3.2v8.2h2.6V6.5h3.2zM16 30l4.5-4.5h-3.2v-8.2h-2.6v8.2h-3.2z' fill='%236cb4ff'/%3E%3Crect x='9.5' y='14.8' width='13' height='2' rx='1' fill='%236cb4ff'/%3E%3Crect x='9.5' y='17.9' width='13' height='2' rx='1' fill='%236cb4ff'/%3E%3C/svg%3E")
     16 16,
@@ -158,9 +193,9 @@ body,
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  padding: 14px;
+  padding: 8px;
   display: grid;
-  gap: 12px;
+  gap: 8px;
   grid-template-rows: auto auto auto minmax(0, 1fr);
 }
 .card {
@@ -170,81 +205,304 @@ body,
   overflow: hidden;
 }
 .card-h {
-  padding: 10px 12px;
+  padding: 7px 10px;
   border-bottom: 1px solid var(--border);
   font-weight: 700;
-  font-size: 14px;
+  font-size: 12px;
   background: var(--surface-soft);
 }
 .kpis {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
 }
 .kpi {
-  padding: 12px;
+  padding: 8px 10px;
 }
 .kpi .l {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--subtle);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  line-height: 1;
 }
 .kpi .v {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
-  margin-top: 4px;
+  margin-top: 2px;
+  line-height: 1.1;
 }
 .small {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--subtle);
 }
 .toolbar {
-  padding: 12px;
+  padding: 8px 10px;
   display: grid;
-  grid-template-columns: 200px 200px minmax(180px, 1fr) 130px 160px auto auto;
-  gap: 8px;
+  grid-template-columns: 160px 160px minmax(110px, 0.72fr) 105px minmax(300px, 340px) auto auto;
+  gap: 6px;
   align-items: center;
 }
 .input,
 .select {
-  height: 36px;
+  height: 32px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0 10px;
+  border-radius: 6px;
+  padding: 0 8px;
   background: var(--surface);
   font: inherit;
   color: var(--text);
+  font-size: 13px;
+}
+.toolbar .btn {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.search-input {
+  font-size: 12px;
+}
+.filters-card {
+  overflow: visible;
+  z-index: 9;
+}
+.filters-card .toolbar {
+  overflow: visible;
+}
+.date-range {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-width: 290px;
+  position: relative;
+  z-index: 12;
+}
+.date-field {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 32px;
+  gap: 6px;
+  padding: 0 7px;
+  border: 1px solid var(--date-field-border);
+  border-radius: 8px;
+  background: var(--date-field-bg);
+  box-shadow: var(--date-field-shadow);
+  position: relative;
+  transition:
+    border-color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+.date-field:focus-within,
+.date-field.open {
+  border-color: var(--primary-strong);
+  box-shadow:
+    0 0 0 2px var(--date-input-focus),
+    var(--date-field-shadow-focus);
+}
+.date-field-label {
+  flex: 0 0 auto;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--subtle);
+}
+.date-range-sep {
+  font-size: 10px;
+  line-height: 1;
+  color: var(--subtle);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.date-trigger {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-emphasis);
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 6px 0 0;
+  cursor: pointer;
+}
+.date-trigger:focus-visible {
+  outline: none;
+}
+.date-trigger-value {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-emphasis);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.date-trigger-icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--primary-strong);
+  background: var(--date-icon-bg);
+  border-radius: 6px;
+  transition: background 0.12s ease;
+}
+.date-trigger:hover .date-trigger-icon {
+  background: var(--date-icon-bg-hover);
+}
+.date-popper {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(320px, 78vw);
+  background: var(--date-popper-bg);
+  border: 1px solid var(--date-popper-border);
+  border-radius: 10px;
+  box-shadow: var(--date-popper-shadow);
+  z-index: 20;
+  padding: 8px;
+}
+.date-field-end .date-popper {
+  right: 0;
+  left: auto;
+}
+.date-popper-head {
+  display: grid;
+  grid-template-columns: 28px 1fr 28px;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 8px;
+  background: var(--date-popper-head-bg);
+}
+.date-popper-title {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-emphasis);
+}
+.date-popper-nav {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-emphasis);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.date-popper-nav:hover {
+  background: var(--date-popper-hover);
+}
+.date-popper-weekdays {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+.date-popper-weekdays span {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--date-popper-muted);
+}
+.date-popper-grid {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+.date-cell {
+  height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-emphasis);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.date-cell:hover {
+  background: var(--date-popper-hover);
+}
+.date-cell.muted {
+  color: var(--date-popper-muted);
+}
+.date-cell.in-range {
+  background: var(--date-popper-in-range);
+}
+.date-cell.range-edge,
+.date-cell.selected {
+  background: var(--date-popper-selected-bg);
+  color: var(--date-popper-selected-fg);
+  font-weight: 700;
+}
+.date-cell.today:not(.selected):not(.range-edge) {
+  box-shadow: inset 0 0 0 1px var(--primary-strong);
+}
+.date-popper-clear {
+  width: 100%;
+  margin-top: 8px;
+  height: 30px;
+  border: 1px dashed var(--date-field-border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--subtle);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.date-popper-clear:hover {
+  border-color: var(--primary-strong);
+  color: var(--primary-strong);
 }
 .meta {
-  padding: 0 12px 12px;
+  padding: 0 10px 8px;
   color: var(--subtle);
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.25;
 }
 .day-strip {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
-  padding: 12px;
+  gap: 6px;
+  padding: 8px 10px;
 }
 .strip-day {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--surface);
-  padding: 8px;
+  padding: 6px;
 }
 .strip-day.today {
   background: var(--surface-today);
   border-color: var(--drop-outline);
 }
 .strip-title {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--subtle);
+  line-height: 1;
 }
 .strip-hours {
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 700;
-  margin-top: 6px;
+  margin-top: 3px;
+  line-height: 1.1;
 }
 .scheduler-wrap {
   padding: 0;

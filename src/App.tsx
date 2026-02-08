@@ -57,6 +57,10 @@ function App() {
           endTime: new Date(2026, 0, 1, 19, 30),
           blockMinutes: 15,
         }}
+        ui={{
+          showWeekStrip: false,
+          showFilters: true,
+        }}
         onTaskCreate={handleTaskCreate}
         onTaskDelete={handleTaskDelete}
         onTaskEdit={handleTaskEdit}
